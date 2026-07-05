@@ -6,7 +6,7 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 
 ## Funcionalidades
 
-- Palavra sorteada aleatoriamente do dicionário `pythonprobr/palavras` (320k+ palavras pt-BR)
+- Palavra sorteada aleatoriamente das 50 mil palavras mais frequentes pt-BR (hermitdave/FrequencyWords)
 - Dica gerada por LLM gratuita (Pollinations.ai) para cada palavra
 - Exibição progressiva da forca em ASCII (6 estágios)
 - Validação de entrada: apenas uma letra por vez, caracteres alfabéticos
@@ -30,7 +30,7 @@ README.md          # Instruções de uso
 | `buscar_palavra()` | Busca lista de palavras da URL, filtra apenas A-Z (≥4 letras) e sorteia uma |
 | `gerar_dica(palavra)` | Gera dica via Pollinations.ai (LLM gratuita, sem API key) |
 | `limpar_tela()` | Limpa o terminal (Windows: `cls`, Unix: `clear`) |
-| `mostrar_status(erros, letras_certas, letras_erradas)` | Desenha a forca, palavra oculta, letras erradas e contagem |
+| `mostrar_status(erros, letras_certas, letras_erradas, dica)` | Desenha a forca, dica, palavra oculta, letras erradas e contagem |
 | `jogar()` | Loop principal do jogo |
 | `if __name__ == "__main__"` | Ponto de entrada |
 
@@ -38,7 +38,7 @@ README.md          # Instruções de uso
 
 | Constante | Valor | Descrição |
 |-----------|-------|-----------|
-| `URL_PALAVRAS` | `"https://raw.githubusercontent.com/..."` | URL da lista de palavras pt-BR |
+| `URL_PALAVRAS` | `"https://raw.githubusercontent.com/hermitdave/..."` | URL das 50k palavras mais frequentes pt-BR |
 | `PALAVRA` | Sorteada em runtime | Palavra a ser adivinhada |
 | `MAX_ERROS` | `6` | Número máximo de erros |
 | `FORCAS` | Lista de 7 strings | Desenhos ASCII da forca (0 a 6 erros) |

@@ -6,7 +6,7 @@ import urllib.request
 import urllib.parse
 
 # Configurações do jogo
-URL_PALAVRAS = "https://raw.githubusercontent.com/pythonprobr/palavras/master/palavras.txt"
+URL_PALAVRAS = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2016/pt_br/pt_br_50k.txt"
 PALAVRA = ""
 MAX_ERROS = 6
 
@@ -72,8 +72,9 @@ FORCAS = [
 
 def buscar_palavra():
     with urllib.request.urlopen(URL_PALAVRAS) as f:
-        palavras = f.read().decode("utf-8").splitlines()
-    validas = [p.strip().upper() for p in palavras if p.strip().isascii() and p.strip().isalpha() and len(p.strip()) >= 4]
+        linhas = f.read().decode("utf-8").splitlines()
+    palavras = (l.split()[0].strip().upper() for l in linhas if l.strip())
+    validas = [p for p in palavras if p.isascii() and p.isalpha() and len(p) >= 4]
     return random.choice(validas)
 
 def gerar_dica(palavra):
@@ -91,9 +92,11 @@ def gerar_dica(palavra):
 def limpar_tela():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def mostrar_status(erros, letras_certas, letras_erradas):
+def mostrar_status(erros, letras_certas, letras_erradas, dica=None):
     limpar_tela()
     print(FORCAS[min(erros, MAX_ERROS)])
+    if dica:
+        print(f"\n📌 DICA: {dica}")
     print(f"\n{' '.join(letras_certas)}")
     print(f"\nLetras erradas: {' '.join(letras_erradas)}")
     print(f"Erros: {erros}/{MAX_ERROS}")
@@ -102,6 +105,7 @@ def jogar():
     global PALAVRA
     PALAVRA = buscar_palavra()
     dica = gerar_dica(PALAVRA)
+    dica_ativa = dica if dica else None
     
     erros = 0
     letras_adivinhadas = set()
@@ -120,7 +124,7 @@ def jogar():
     input("\nPressione ENTER para começar...")
 
     while erros < MAX_ERROS and '_' in progresso:
-        mostrar_status(erros, progresso, letras_erradas)
+        mostrar_status(erros, progresso, letras_erradas, dica_ativa)
         
         tentativa = input("\nDigite uma letra: ").strip().upper()
         
@@ -147,7 +151,7 @@ def jogar():
             letras_erradas.append(tentativa)
 
     # Fim de jogo
-    mostrar_status(erros, progresso, letras_erradas)
+    mostrar_status(erros, progresso, letras_erradas, dica_ativa)
     
     if '_' not in progresso:
         print("\n🎉 PARABÉNS! Você venceu!")
