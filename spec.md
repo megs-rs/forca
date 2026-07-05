@@ -18,7 +18,7 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 ## Arquitetura
 
 ```
-code_l9qwz.py      # Código fonte único (~130 linhas)
+forca.py      # Código fonte único (~130 linhas)
 spec.md            # Este documento
 README.md          # Instruções de uso
 ```

@@ -9,7 +9,7 @@ Jogo da forca clássico em Python para terminal.
 ## Como jogar
 
 ```bash
-python code_l9qwz.py
+python forca.py
 ```
 
 Uma palavra aleatória é buscada da internet (repositório `pythonprobr/palavras` com mais de 320 mil palavras pt-BR). Uma dica é gerada por IA gratuita (Pollinations.ai). Digite uma letra por vez. Você tem 6 erros antes de ser enforcado.
@@ -19,7 +19,7 @@ Uma palavra aleatória é buscada da internet (repositório `pythonprobr/palavra
 ## Estrutura do projeto
 
 ```
-code_l9qwz.py   # Código principal
+forca.py        # Código principal
 spec.md         # Especificação técnica
 README.md       # Este arquivo
 ```
