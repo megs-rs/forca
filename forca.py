@@ -77,10 +77,16 @@ FORCAS = [
 
 def buscar_palavra():
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    idade = time.time() - CACHE_ARQUIVO.stat().st_mtime if CACHE_ARQUIVO.exists() else CACHE_IDADE_MAX + 1
-    if idade > CACHE_IDADE_MAX:
-        with urllib.request.urlopen(URL_PALAVRAS) as f:
-            CACHE_ARQUIVO.write_bytes(f.read())
+    if CACHE_ARQUIVO.exists():
+        idade = time.time() - CACHE_ARQUIVO.stat().st_mtime
+        if idade <= CACHE_IDADE_MAX:
+            with open(CACHE_ARQUIVO) as f:
+                linhas = f.read().splitlines()
+            palavras = (l.split()[0].strip().upper() for l in linhas if l.strip())
+            validas = [p for p in palavras if p.isascii() and p.isalpha() and len(p) >= 4]
+            return random.choice(validas)
+    with urllib.request.urlopen(URL_PALAVRAS) as f:
+        CACHE_ARQUIVO.write_bytes(f.read())
     with open(CACHE_ARQUIVO) as f:
         linhas = f.read().splitlines()
     palavras = (l.split()[0].strip().upper() for l in linhas if l.strip())
