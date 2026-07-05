@@ -104,9 +104,12 @@ def limpar_tela():
 
 def mostrar_status(erros, letras_certas, letras_erradas, dica=None):
     limpar_tela()
+    print("=" * 40)
+    print("           JOGO DA FORCA")
+    print("=" * 40)
     print(FORCAS[min(erros, MAX_ERROS)])
     if dica:
-        print(f"\n📌 DICA: {dica}")
+        print(f"DICA: {dica}")
     print(f"\n{' '.join(letras_certas)}")
     print(f"\nLetras erradas: {' '.join(letras_erradas)}")
     print(f"Erros: {erros}/{MAX_ERROS}")
