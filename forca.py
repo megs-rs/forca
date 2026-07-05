@@ -6,8 +6,7 @@ import urllib.request
 import urllib.parse
 from pathlib import Path
 
-CACHE_DIR = Path.home() / ".cache" / "forca"
-CACHE_ARQUIVO = CACHE_DIR / "palavras.txt"
+CACHE_ARQUIVO = Path(__file__).parent / ".cache_palavras.txt"
 CACHE_IDADE_MAX = 10 * 86400  # 10 dias em segundos
 
 # Configurações do jogo
@@ -76,7 +75,6 @@ FORCAS = [
 ]
 
 def buscar_palavra():
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
     if CACHE_ARQUIVO.exists():
         idade = time.time() - CACHE_ARQUIVO.stat().st_mtime
         if idade <= CACHE_IDADE_MAX:
