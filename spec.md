@@ -6,13 +6,16 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 
 ## Funcionalidades
 
-- Palavras de uma lista local curada (~270 substantivos/adjetivos pt-BR) com rotação periódica via web
+- Palavras de uma lista local curada (266 substantivos/adjetivos pt-BR) com rotação periódica via web
 - Download inicial de ~500 palavras na primeira execução
-- Dicas geradas por LLM gratuita (Pollinations.ai) em português brasileiro, com cache append-only
-- Limpeza automática de dicas obsoletas quando o cache de palavras rotaciona
+- Filtros automáticos: verbos infinitivos, pronomes, nomes próprios, adjetivos inadequados
+- Sistema de dicas via LLM com 3 mirrors: OpenRouter (gratuito, API key) → Pollinations.ai (sem key) → dicionário local (~200 dicas)
+- Cache de dicas append-only, sincronizado automaticamente com cache de palavras
 - Pré-busca de dicas em background (loop contínuo, reinicia a cada partida)
 - Mensagens de status animadas durante chamadas de rede
-- Fallback visual quando a nuvem falha: `(dica indisponivel — sem conexao com a nuvem)`
+- Configuração interativa de API key na primeira execução (com opção de pular)
+- Placar: vitórias, derrotas, tempo mínimo/máximo
+- Log detalhado de tentativas de conexão LLM
 - Exibição progressiva da forca em ASCII (6 estágios)
 - Validação de entrada: apenas uma letra por vez, caracteres alfabéticos
 - Prevenção de letras repetidas
@@ -24,8 +27,8 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 ## Arquitetura
 
 ```
-forca.py            # Código fonte único (~420 linhas)
-palavras_base.txt   # Lista curada de palavras (substantivos/adjetivos)
+forca.py            # Código fonte único (~1020 linhas)
+palavras_base.txt   # Lista curada de palavras (266 substantivos/adjetivos)
 spec.md             # Este documento
 README.md           # Instruções de uso
 ```
@@ -36,6 +39,9 @@ README.md           # Instruções de uso
 |---------|-----------|
 | `.cache_palavras.txt` | Palavras obtidas da web, com rotação de 25% a cada 10 dias. Header `# atualizado: <timestamp>` |
 | `.cache_dicas.txt` | Dicas salvas por palavra (formato: `PALAVRA\tdica`). Append-only, auto-limpo na rotação |
+| `.forca_config` | Configuração persistente (API key do OpenRouter) |
+| `.forca_log.txt` | Log detalhado de cada tentativa de conexão LLM (timestamps, HTTP codes, corpo) |
+| `.forca_placar.txt` | Placar: vitórias, derrotas, tempo mínimo/máximo |
 
 ### Funções
 
@@ -59,24 +65,41 @@ README.md           # Instruções de uso
 | Função | Descrição |
 |--------|-----------|
 | `buscar_palavra()` | Carrega palavras (cache > base), dispara update se necessário, sorteia uma |
-| `_carregar_palavras_base()` | Lê `palavras_base.txt` e filtra apenas ASCII alfabético (≥4 letras) |
-| `_ler_cache_palavras()` | Lê `.cache_palavras.txt` (suporta header `# atualizado:` e formato legado) |
+| `_carregar_palavras_base()` | Lê `palavras_base.txt`, filtra apenas ASCII alfabético (≥4 letras), aplica filtro de palavras proibidas |
+| `_ler_cache_palavras()` | Lê `.cache_palavras.txt` (suporta header `# atualizado:` e formato legado), aplica filtro |
 | `_salvar_cache(palavras)` | Salva palavras no cache com header de timestamp |
 | `_baixar_lista_inicial()` | Download síncrono de ~500 palavras na primeira execução |
 | `_ler_timestamp_cache()` | Lê timestamp do header `# atualizado:` do cache de palavras |
 | `_iniciar_atualizacao_se_necessario()` | Verifica idade do cache via header; se não existe, faz download inicial; se >10 dias, dispara update em background |
 | `_atualizar_cache_bg()` | Busca novas palavras da web, rotaciona 25%, limpa dicas obsoletas |
 
-#### Sistema de dicas
+#### Sistema de dicas (3 mirrors)
 
 | Função | Descrição |
 |--------|-----------|
-| `gerar_dica(palavra)` | Busca dica no cache; se ausente, busca na nuvem (2 tentativas) e salva |
-| `_buscar_dica_nuvem(palavra)` | Faz request à Pollinations.ai para gerar dica |
+| `gerar_dica(palavra)` | Busca dica no cache; se ausente, busca na nuvem via mirrors e salva |
+| `_buscar_dica_nuvem(palavra)` | Tenta OpenRouter → Pollinations → dicionário local, com retry entre mirrors |
 | `_ler_cache_dicas()` | Lê `.cache_dicas.txt` em dict `{PALAVRA: dica}` |
 | `_salvar_dica(palavra, dica)` | Append de dica no cache (não reescreve o arquivo) |
 | `_limpar_dicas_obsoletas()` | Remove dicas de palavras que não estão em `_palavras_atuais` |
 | `_prefetch_dicas_bg()` | Thread loop que pré-busca dicas para todas as palavras (2s entre requests, 30s se tudo pronto) |
+
+#### Configuração
+
+| Função | Descrição |
+|--------|-----------|
+| `_configurar_api_key()` | Setup interativo na primeira execução: instrui usuário, valida key, salva em `.forca_config` |
+| `_ler_api_key()` | Lê API key de `.forca_config` |
+| `_salvar_api_key(key)` | Salva API key no arquivo de configuração |
+
+#### Placar e log
+
+| Função | Descrição |
+|--------|-----------|
+| `_carregar_placar()` | Carrega placar de `.forca_placar.txt` |
+| `_salvar_placar(venceu, tempo)` | Atualiza placar com resultado e tempo da partida |
+| `_exibir_placar()` | Exibe resumo: vitórias, derrotas, tempo min/max |
+| `_log_tentativa(palavra, mirror, http_code, ok, msg)` | Registra detalhes de cada tentativa de conexão |
 
 ### Constantes
 
@@ -87,6 +110,16 @@ README.md           # Instruções de uso
 | `FORCAS` | Lista de 7 strings | Desenhos ASCII da forca (0 a 6 erros) |
 | `CACHE_IDADE_MAX` | `864000` (10 dias) | Idade máxima do cache de palavras em segundos |
 | `DICA_CACHE` | `.cache_dicas.txt` | Caminho do arquivo de cache de dicas |
+| `PROMPT_DICA` | String em português | Prompt para geração de dicas via LLM |
+| `PALAVRAS_PROIBIDAS` | Set de ~150+ palavras | Verbos, pronomes, adjetivos inadequados, nomes próprios |
+
+### Models testados
+
+| Mirror | Modelo | Status |
+|--------|--------|--------|
+| OpenRouter | `openai/gpt-oss-120b:free` | Ativo |
+| OpenRouter | `nvidia/nemotron-3-nano-30b-a3b:free` | Ativo |
+| Pollinations | GET (sem key) | Funcional, mais lento |
 
 ## Sistema de Palavras Híbrido
 
@@ -116,24 +149,22 @@ buscar_palavra()
 | Execução seguinte, cache válido | `.cache_palavras.txt` |
 | Execução >10 dias | `.cache_palavras.txt` + background update 25% |
 
-## Sistema de Dicas com Cache e Limpeza
+## Sistema de Dicas com 3 Mirrors
 
 ```
-jogar()
-  ├─ Dispara _prefetch_dicas_bg() (loop contínuo)
-  │     └─ Para cada palavra sem dica cacheada:
-  │           └─ Busca dica na Pollinations.ai (2s intervalo)
-  │           └─ Append em .cache_dicas.txt
-  │     └─ Se tudo pronto → wait 30s e reassume
-  │
-  ├─ gerar_dica(palavra):
-  │     ├─ Cache hit → retorna instantaneamente
-  │     └─ Cache miss → busca nuvem (2 tentativas), salva
-  │          └─ Falha → retorna fallback "(dica indisponivel...)"
-  │
-  └─ Rotação de palavras (a cada 10 dias):
-       └─ _limpar_dicas_obsoletas()
-            └─ Remove dicas de palavras que não estão mais no jogo
+gerar_dica(palavra)
+  ├─ Cache hit → retorna instantaneamente
+  └─ Cache miss → _buscar_dica_nuvem(palavra)
+       ├─ 1º: OpenRouter (POST, com API key)
+       │    ├─ Sucesso → salva dica
+       │    └─ Falha → log + tenta próximo mirror
+       ├─ 2º: Pollinations (GET, sem key)
+       │    ├─ Sucesso → salva dica
+       │    └─ Falha → log + tenta próximo mirror
+       ├─ 3º: Dicionário local (~200 dicas pré-escritas)
+       │    ├─ Palavra existe → salva dica
+       │    └─ Palavra não existe → fallback "(dica indisponivel...)"
+       └─ Salva no cache (append)
 ```
 
 ### Format dos caches
@@ -166,19 +197,21 @@ Usada durante: busca de palavras, geração de dicas, download inicial.
 
 ## Fluxo do Jogo
 
-1. Inicia pré-busca de dicas em background (loop contínuo)
-2. Sorteia palavra (cache da web ou base local)
-3. Obtém dica (cache ou nuvem, com fallback se falhar)
-4. Loop: exibe status → lê letra → valida → verifica acerto
-5. Encerra ao acertar a palavra ou atingir `MAX_ERROS`
-6. Exibe resultado final, pergunta nova partida
-7. Se sim, limpa tela e volta ao passo 1
+1. Configuração de API key (primeira execução)
+2. Inicia pré-busca de dicas em background (loop contínuo)
+3. Sorteia palavra (cache da web ou base local)
+4. Obtém dica (cache → OpenRouter → Pollinations → local → fallback)
+5. Loop: exibe status → lê letra → valida → verifica acerto
+6. Encerra ao acertar a palavra ou atingir `MAX_ERROS`
+7. Exibe resultado, atualiza e exibe placar
+8. Pergunta nova partida
+9. Se sim, limpa tela e volta ao passo 2
 
 ## Possíveis Melhorias Futuras
 
 - Modo multiplayer (um jogador escolhe a palavra)
-- Pontuação baseada em tentativas
 - Interface gráfica (Tkinter ou web)
 - Suporte a acentos
 - Indicador visual de progresso do prefetch de dicas
 - Limitar tamanho do cache de dicas (cap max)
+- Estatísticas detalhadas no placar (palavras mais erradas, streaks)
