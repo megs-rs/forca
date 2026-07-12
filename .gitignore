@@ -1,2 +1,6 @@
 __pycache__/
 .cache_palavras.txt
+.cache_dicas.txt
+.forca_config
+.forca_log.txt
+.forca_placar.txt
