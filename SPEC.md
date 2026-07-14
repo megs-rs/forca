@@ -8,7 +8,7 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 
 - Palavras de uma lista local curada (266 substantivos/adjetivos pt-BR) com rotação periódica via web
 - Download inicial de ~500 palavras na primeira execução
-- Filtros automáticos: verbos infinitivos, pronomes, nomes próprios, adjetivos inadequados
+- Filtros automáticos em camadas: `PALAVRAS_PROIBIDAS`, `_VERBOS_INFINITIVOS`, `_VERBOS_CONJUGACAO` (regex), `_INGLES_COMUNS`
 - Sistema de dicas via LLM com 3 mirrors: OpenRouter (gratuito, API key) → Pollinations.ai (sem key) → dicionário local (~200 dicas)
 - Cache de dicas append-only, sincronizado automaticamente com cache de palavras
 - Pré-busca de dicas em background (loop contínuo, reinicia a cada partida)
@@ -27,7 +27,7 @@ Jogo da forca (Hangman) em linha de comando, implementado em Python puro. O joga
 ## Arquitetura
 
 ```
-forca.py            # Código fonte único (~1020 linhas)
+forca.py            # Código fonte único (~1150 linhas)
 palavras_base.txt   # Lista curada de palavras (266 substantivos/adjetivos)
 spec.md             # Este documento
 README.md           # Instruções de uso
@@ -65,8 +65,9 @@ README.md           # Instruções de uso
 | Função | Descrição |
 |--------|-----------|
 | `buscar_palavra()` | Carrega palavras (cache > base), dispara update se necessário, sorteia uma |
-| `_carregar_palavras_base()` | Lê `palavras_base.txt`, filtra apenas ASCII alfabético (≥4 letras), aplica filtro de palavras proibidas |
-| `_ler_cache_palavras()` | Lê `.cache_palavras.txt` (suporta header `# atualizado:` e formato legado), aplica filtro |
+| `_filtrar_palavra(palavra)` | Filtra palavra: verifica PALAVRAS_PROIBIDAS, _VERBOS_INFINITIVOS, _VERBOS_CONJUGACAO (regex), _INGLES_COMUNS |
+| `_carregar_palavras_base()` | Lê `palavras_base.txt`, aplica `_filtrar_palavra()` |
+| `_ler_cache_palavras()` | Lê `.cache_palavras.txt` (suporta header `# atualizado:` e formato legado), aplica `_filtrar_palavra()` |
 | `_salvar_cache(palavras)` | Salva palavras no cache com header de timestamp |
 | `_baixar_lista_inicial()` | Download síncrono de ~500 palavras na primeira execução |
 | `_ler_timestamp_cache()` | Lê timestamp do header `# atualizado:` do cache de palavras |
@@ -78,7 +79,8 @@ README.md           # Instruções de uso
 | Função | Descrição |
 |--------|-----------|
 | `gerar_dica(palavra)` | Busca dica no cache; se ausente, busca na nuvem via mirrors e salva |
-| `_buscar_dica_nuvem(palavra)` | Tenta OpenRouter → Pollinations → dicionário local, com retry entre mirrors |
+| `_buscar_dica_openrouter(palavra, api_key, modelo)` | POST com system message e `reasoning: {enabled: false}` para evitar raciocínio em inglês |
+| `_buscar_dica_pollinations(palavra, modelo)` | GET sem key, fallback automático |
 | `_ler_cache_dicas()` | Lê `.cache_dicas.txt` em dict `{PALAVRA: dica}` |
 | `_salvar_dica(palavra, dica)` | Append de dica no cache (não reescreve o arquivo) |
 | `_limpar_dicas_obsoletas()` | Remove dicas de palavras que não estão em `_palavras_atuais` |
@@ -112,13 +114,16 @@ README.md           # Instruções de uso
 | `DICA_CACHE` | `.cache_dicas.txt` | Caminho do arquivo de cache de dicas |
 | `PROMPT_DICA` | String em português | Prompt para geração de dicas via LLM |
 | `PALAVRAS_PROIBIDAS` | Set de ~150+ palavras | Verbos, pronomes, adjetivos inadequados, nomes próprios |
+| `_VERBOS_INFINITIVOS` | Set de ~300+ verbos | Verbos em infinitivo para filtrar |
+| `_VERBOS_CONJUGACAO` | Regex | Padrões de verbos conjugados: -OU, -EI, -IU, -ANDO, -ENDO, -INDO, etc. |
+| `_INGLES_COMUNS` | Set de ~200 palavras | Palavras em inglês frequentes para filtrar |
 
 ### Models testados
 
 | Mirror | Modelo | Status |
 |--------|--------|--------|
-| OpenRouter | `openai/gpt-oss-120b:free` | Ativo |
-| OpenRouter | `nvidia/nemotron-3-nano-30b-a3b:free` | Ativo |
+| OpenRouter | `openai/gpt-oss-120b:free` | HTTP 404 — indisponível no plano gratuito |
+| OpenRouter | `nvidia/nemotron-3-nano-30b-a3b:free` | Ativo (com `reasoning: {enabled: false}`) |
 | Pollinations | GET (sem key) | Funcional, mais lento |
 
 ## Sistema de Palavras Híbrido
@@ -149,6 +154,19 @@ buscar_palavra()
 | Execução seguinte, cache válido | `.cache_palavras.txt` |
 | Execução >10 dias | `.cache_palavras.txt` + background update 25% |
 
+### Fluxo de Filtragem
+
+```
+_palavra_candidata
+  ├─ len < 4? → REJEITA
+  ├─ não é ASCII? → REJEITA
+  ├─ PALAVRAS_PROIBIDAS? → REJEITA
+  ├─ _VERBOS_INFINITIVOS? → REJEITA
+  ├─ _VERBOS_CONJUGACAO (regex)? → REJEITA
+  ├─ _INGLES_COMUNS? → REJEITA
+  └─ ACEITA
+```
+
 ## Sistema de Dicas com 3 Mirrors
 
 ```
@@ -156,6 +174,8 @@ gerar_dica(palavra)
   ├─ Cache hit → retorna instantaneamente
   └─ Cache miss → _buscar_dica_nuvem(palavra)
        ├─ 1º: OpenRouter (POST, com API key)
+       │    ├─ System message: "Responda APENAS em portugues brasileiro"
+       │    ├─ reasoning: {enabled: false} (evita raciocínio em inglês)
        │    ├─ Sucesso → salva dica
        │    └─ Falha → log + tenta próximo mirror
        ├─ 2º: Pollinations (GET, sem key)
