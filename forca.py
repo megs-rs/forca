@@ -547,8 +547,7 @@ MODELOS_POLLINATIONS = [
 ]
 
 MODELOS_OPENROUTER = [
-    "openai/gpt-oss-120b:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "openrouter/free",
 ]
 
 DICAS_LOCAIS = {

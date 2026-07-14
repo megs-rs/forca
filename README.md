@@ -27,7 +27,7 @@ Digite uma letra por vez. Você tem 6 erros antes de ser enforcado. Ao final de 
 Na primeira execução, baixa ~500 palavras da web para o cache. A cada 10 dias, 25% do cache é rotacionado com novas palavras da web em background.
 
 **Dicas via LLM**: Sistema de mirrors com 3 camadas:
-1. **OpenRouter** (gratuito, com API key) — modelo `nvidia/nemotron-3-nano-30b-a3b:free` com system message para português e `reasoning: {enabled: false}` para evitar raciocínio em inglês
+1. **OpenRouter** (gratuito, com API key) — modelo `openrouter/free` (router automático entre modelos gratuitos) com system message para português e `reasoning: {enabled: false}` para evitar raciocínio em inglês
 2. **Pollinations.ai** (sem key) — fallback automático
 3. **Dicionário local** — ~200 dicas pré-escritas para último recurso
 

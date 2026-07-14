@@ -122,8 +122,7 @@ README.md           # Instruções de uso
 
 | Mirror | Modelo | Status |
 |--------|--------|--------|
-| OpenRouter | `openai/gpt-oss-120b:free` | HTTP 404 — indisponível no plano gratuito |
-| OpenRouter | `nvidia/nemotron-3-nano-30b-a3b:free` | Ativo (com `reasoning: {enabled: false}`) |
+| OpenRouter | `openrouter/free` | Router automático entre modelos gratuitos disponíveis |
 | Pollinations | GET (sem key) | Funcional, mais lento |
 
 ## Sistema de Palavras Híbrido
