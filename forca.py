@@ -89,6 +89,128 @@ PALAVRAS_PROIBIDAS = {
     "AQUELES", "AQUELAS", "ISTO", "ISSO", "AQUILO",
 }
 
+import re
+
+# Verbos infinitivos comuns que devem ser filtrados
+_VERBOS_INFINITIVOS = {
+    "ACALMAR", "AGENDAR", "AGILIZAR", "ARRECADAR", "BROTAR",
+    "CANSAR", "CHOCAR", "COLHER", "CONSTITUIR", "CONTRARIAR",
+    "CORRIGIR", "DESTRANCAR", "DOMICILIAR", "ENFRAQUECER",
+    "ENGAJAR", "ESTICAR", "ESTUPRAR", "GAGUEJAR", "INFRINGIR",
+    "MARCHAR", "PRONUNCIAR", "PROTEGER", "RECONQUISTAR", "REPORTAR",
+    "RESTAR", "SOBRECARREGAR", "SOLTAR", "VARRER",
+    "INSPECIONAR", "PAQUERAR", "ESTABILIZAR", "PUXAR", "BABAR",
+    "TOMAR", "SONHAR", "ABANDONAR", "SACANEAR", "FABRICAR",
+    "NAVEGAR", "EXPLORAR", "SALDAR", "CONQUISTAR", "DESEJAR",
+    "PERMITIR", "IMPRIMIR", "CONTINUAR", "INSERIR", "ENTRAR",
+    "CAVALGAR", "RUMAR", "SURPREENDER", "RENUNCIAR", "CORROMPER",
+}
+
+# Palavras curtas em ingles comuns (4-5 letras)
+_INGLES_COMUNS = {
+    "BODY", "BLOOD", "BRAIN", "BURN", "CAMP", "CASE", "CASH", "CHARM",
+    "CHIP", "CLUB", "COAT", "COOK", "CORN", "CREW", "CROW", "DARK",
+    "DAWN", "DEAL", "DEBT", "DIRT", "DISH", "DOCK", "DOOR", "DUST",
+    "FARM", "FEAR", "FILM", "FIRE", "FISH", "FOAM", "FOLK", "FOOD",
+    "FORD", "FORM", "FROG", "FUEL", "GAME", "GATE", "GIFT", "GIRL",
+    "GOLD", "GOLF", "HAIR", "HALF", "HAND", "HANG", "HAZE", "HELM",
+    "HERB", "HERO", "HILL", "HOBBY", "HOOD", "HOPE", "HORN", "HORSE",
+    "HUNT", "IRON", "JAIL", "JAZZ", "JEWEL", "KICK", "KINGDOM", "KNOT",
+    "LACE", "LAKE", "LAND", "LAVA", "LEAF", "LION", "LOCK", "LORD",
+    "LUCK", "MAGIC", "MAIZE", "MAPLE", "MARCH", "MASK", "MEDAL", "MELON",
+    "MOLE", "MOON", "MUSEUM", "NEST", "NOON", "NOTE", "OLIVE", "OPERA",
+    "ORBIT", "OVEN", "OWLS", "PANDA", "PARK", "PEARL", "PIANO", "PILOT",
+    "PINE", "PLANET", "PLANT", "PLAZA", "PLUMB", "PLUME", "POEM", "POET",
+    "POLE", "POLICE", "POND", "PRINCE", "PULSE", "QUEEN", "RABBIT", "RAIL",
+    "RAIN", "RIVER", "ROAD", "ROBOT", "ROCK", "ROOF", "ROOM", "ROOT",
+    "ROSE", "SAINT", "SALAD", "SATIN", "SAUCE", "SCALE", "SCARF", "SCENE",
+    "SEAL", "SHARK", "SHEEP", "SHELF", "SHIP", "SHIRT", "SHOCK", "SHOOT",
+    "SKILL", "SKULL", "SLATE", "SLAVE", "SLEEP", "SLOPE", "SMILE", "SMITH",
+    "SMOKE", "SNAKE", "SOLAR", "SOLID", "SONG", "SPACE", "SPARE", "SPARK",
+    "SPEAK", "SPEED", "SPEND", "SPICE", "SPINE", "SPLIT", "SPRAY", "SQUAD",
+    "STACK", "STAFF", "STAGE", "STAIN", "STAKE", "STAMP", "STAND", "STARK",
+    "STATE", "STEAK", "STEAL", "STEAM", "STEEL", "STEEP", "STERN", "STICK",
+    "STIFF", "STILL", "STOCK", "STONE", "STOOD", "STORM", "STORY", "STOVE",
+    "STRIP", "STUCK", "STUDY", "STUFF", "STYLE", "SUGAR", "SUNNY", "SUPER",
+    "SWEET", "SWING", "TABLE", "TASTE", "TEACH", "THEME", "THICK", "THINK",
+    "THORN", "THREE", "THROW", "TIGER", "TITLE", "TODAY", "TOKEN", "TOOTH",
+    "TOPAZ", "TOTAL", "TOUCH", "TOWER", "TRACK", "TRADE", "TRAIL", "TRAIN",
+    "TRAIT", "TRASH", "TRICK", "TRUCK", "TRULY", "TRUMP", "TRUNK", "TRUST",
+    "TRUTH", "TUNER", "ULTRA", "UNCLE", "UNDER", "UNION", "UNITE", "UNITY",
+    "UNTIL", "UPPER", "UPSET", "URBAN", "USAGE", "USUAL", "UTTER", "VALID",
+    "VALUE", "VAULT", "VERSE", "VIDEO", "VIOLA", "VIRUS", "VISIT", "VISTA",
+    "VITAL", "VOCAL", "VODKA", "VOICE", "VOTER", "WAIST", "WASTE", "WATCH",
+    "WATER", "WEARY", "WEIRD", "WHALE", "WHEAT", "WHEEL", "WHERE", "WHICH",
+    "WHILE", "WHITE", "WHOLE", "WHOSE", "WIDER", "WITCH", "WOMAN", "WORLD",
+    "WORRY", "WORSE", "WORST", "WORTH", "WOULD", "WOUND", "WRITE", "WRONG",
+    "WROTE", "YACHT", "YIELD", "YOUNG", "YOURS", "YOUTH", "ZEBRA",
+}
+
+# Sufixos que indicam verbo conjugado (confiaveis)
+_VERBOS_CONJUGACAO = re.compile(
+    r"OU$|EI$|IU$|ANDO$|ENDO$|INDO$|AVA[SM]?$|IAM[OS]?$|"
+    r"AREI$|EREI$|IREI$|ARI[AO]M?$|ERI[AO]M?$|IRI[AO]M?$|"
+    r"ADO$|IDO$|ARAM$|ERAM$|IRAM$|ASSE$|ESSE$|ISSE$|EMOS$",
+    re.IGNORECASE
+)
+
+# Palavras curtas em ingles comuns (4-5 letras)
+_INGLES_COMUNS = {
+    "BODY", "BLOOD", "BRAIN", "BURN", "CAMP", "CASE", "CASH", "CHARM",
+    "CHIP", "CLUB", "COAT", "COOK", "CORN", "CREW", "CROW", "DARK",
+    "DAWN", "DEAL", "DEBT", "DIRT", "DISH", "DOCK", "DOOR", "DUST",
+    "FARM", "FEAR", "FILM", "FIRE", "FISH", "FOAM", "FOLK", "FOOD",
+    "FORD", "FORM", "FROG", "FUEL", "GAME", "GATE", "GIFT", "GIRL",
+    "GOLD", "GOLF", "HAIR", "HALF", "HAND", "HANG", "HAZE", "HELM",
+    "HERB", "HERO", "HILL", "HOBBY", "HOOD", "HOPE", "HORN", "HORSE",
+    "HUNT", "IRON", "JAIL", "JAZZ", "JEWEL", "KICK", "KINGDOM", "KNOT",
+    "LACE", "LAKE", "LAND", "LAVA", "LEAF", "LION", "LOCK", "LORD",
+    "LUCK", "MAGIC", "MAIZE", "MAPLE", "MARCH", "MASK", "MEDAL", "MELON",
+    "MOLE", "MOON", "MUSEUM", "NEST", "NOON", "NOTE", "OLIVE", "OPERA",
+    "ORBIT", "OVEN", "OWLS", "PANDA", "PARK", "PEARL", "PIANO", "PILOT",
+    "PINE", "PLANET", "PLANT", "PLAZA", "PLUMB", "PLUME", "POEM", "POET",
+    "POLE", "POLICE", "POND", "PRINCE", "PULSE", "QUEEN", "RABBIT", "RAIL",
+    "RAIN", "RIVER", "ROAD", "ROBOT", "ROCK", "ROOF", "ROOM", "ROOT",
+    "ROSE", "SAINT", "SALAD", "SATIN", "SAUCE", "SCALE", "SCARF", "SCENE",
+    "SEAL", "SHARK", "SHEEP", "SHELF", "SHIP", "SHIRT", "SHOCK", "SHOOT",
+    "SKILL", "SKULL", "SLATE", "SLAVE", "SLEEP", "SLOPE", "SMILE", "SMITH",
+    "SMOKE", "SNAKE", "SOLAR", "SOLID", "SONG", "SPACE", "SPARE", "SPARK",
+    "SPEAK", "SPEED", "SPEND", "SPICE", "SPINE", "SPLIT", "SPRAY", "SQUAD",
+    "STACK", "STAFF", "STAGE", "STAIN", "STAKE", "STAMP", "STAND", "STARK",
+    "STATE", "STEAK", "STEAL", "STEAM", "STEEL", "STEEP", "STERN", "STICK",
+    "STIFF", "STILL", "STOCK", "STONE", "STOOD", "STORM", "STORY", "STOVE",
+    "STRIP", "STUCK", "STUDY", "STUFF", "STYLE", "SUGAR", "SUNNY", "SUPER",
+    "SWEET", "SWING", "TABLE", "TASTE", "TEACH", "THEME", "THICK", "THINK",
+    "THORN", "THREE", "THROW", "TIGER", "TITLE", "TODAY", "TOKEN", "TOOTH",
+    "TOPAZ", "TOTAL", "TOUCH", "TOWER", "TRACK", "TRADE", "TRAIL", "TRAIN",
+    "TRAIT", "TRASH", "TRICK", "TRUCK", "TRULY", "TRUMP", "TRUNK", "TRUST",
+    "TRUTH", "TUNER", "ULTRA", "UNCLE", "UNDER", "UNION", "UNITE", "UNITY",
+    "UNTIL", "UPPER", "UPSET", "URBAN", "USAGE", "USUAL", "UTTER", "VALID",
+    "VALUE", "VAULT", "VERSE", "VIDEO", "VIOLA", "VIRUS", "VISIT", "VISTA",
+    "VITAL", "VOCAL", "VODKA", "VOICE", "VOTER", "WAIST", "WASTE", "WATCH",
+    "WATER", "WEARY", "WEIRD", "WHALE", "WHEAT", "WHEEL", "WHERE", "WHICH",
+    "WHILE", "WHITE", "WHOLE", "WHOSE", "WIDER", "WITCH", "WOMAN", "WORLD",
+    "WORRY", "WORSE", "WORST", "WORTH", "WOULD", "WOUND", "WRITE", "WRONG",
+    "WROTE", "YACHT", "YIELD", "YOUNG", "YOURS", "YOUTH", "ZEBRA",
+}
+
+
+def _filtrar_palavra(palavra):
+    """Retorna True se a palavra e adequada para o jogo da forca."""
+    p = palavra.upper().strip()
+    if not p.isascii() or not p.isalpha() or len(p) < 4:
+        return False
+    if p in PALAVRAS_PROIBIDAS:
+        return False
+    if p in _INGLES_COMUNS:
+        return False
+    if p in _VERBOS_INFINITIVOS:
+        return False
+    if _VERBOS_CONJUGACAO.search(p):
+        return False
+    return True
+
+
 # Palavras atuais do jogo (atualizadas em background)
 _palavras_atuais = []
 
@@ -271,7 +393,7 @@ def _carregar_palavras_base():
     if not ARQ_PALAVRAS_BASE.exists():
         return []
     with open(ARQ_PALAVRAS_BASE) as f:
-        return [l.strip().upper() for l in f if l.strip() and l.strip().isascii() and l.strip().isalpha() and len(l.strip()) >= 4 and l.strip().upper() not in PALAVRAS_PROIBIDAS]
+        return [l.strip().upper() for l in f if l.strip() and _filtrar_palavra(l.strip())]
 
 
 def _ler_cache_palavras():
@@ -281,14 +403,14 @@ def _ler_cache_palavras():
         linhas = f.read().splitlines()
     if not linhas or not linhas[0].startswith("#"):
         palavras = [l.strip().upper() for l in linhas if l.strip()]
-        return [p for p in palavras if p.isascii() and p.isalpha() and len(p) >= 4 and p not in PALAVRAS_PROIBIDAS]
+        return [p for p in palavras if _filtrar_palavra(p)]
     palavras = []
     for l in linhas:
         if l.startswith("#"):
             continue
         if l.strip():
             palavras.append(l.strip().upper())
-    return [p for p in palavras if p.isascii() and p.isalpha() and len(p) >= 4 and p not in PALAVRAS_PROIBIDAS]
+    return [p for p in palavras if _filtrar_palavra(p)]
 
 
 def _salvar_cache(palavras):
@@ -323,7 +445,7 @@ def _atualizar_cache_bg():
             partes = l.strip().split()
             if partes:
                 p = partes[0].upper()
-                if p.isascii() and p.isalpha() and len(p) >= 4 and p not in PALAVRAS_PROIBIDAS:
+                if _filtrar_palavra(p):
                     novas.append(p)
         if not novas:
             return
@@ -360,7 +482,7 @@ def _baixar_lista_inicial():
             partes = l.strip().split()
             if partes:
                 p = partes[0].upper()
-                if p.isascii() and p.isalpha() and len(p) >= 4:
+                if _filtrar_palavra(p):
                     novas.append(p)
         if novas:
             random.shuffle(novas)
@@ -712,8 +834,12 @@ def _buscar_dica_openrouter(palavra, api_key, modelo=None):
     url = "https://openrouter.ai/api/v1/chat/completions"
     data = json.dumps({
         "model": modelo,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 100
+        "messages": [
+            {"role": "system", "content": "Responda APENAS em portugues brasileiro. Nao mostre raciocinio, pensamentos ou explicacoes. Retorne SOMENTE a dica curta solicitada."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 100,
+        "reasoning": {"enabled": False}
     }).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={
         "Content-Type": "application/json",
